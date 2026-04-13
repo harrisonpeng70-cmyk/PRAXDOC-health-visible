@@ -4,6 +4,8 @@ Minimal runnable Express + TypeScript backend for:
 - ingest APIs
 - retrieve APIs
 - audit APIs
+- workspace APIs
+- admin APIs
 
 ## 1) Setup
 
@@ -37,6 +39,7 @@ npm run dev
 ```bash
 npm run smoke:sources
 npm run smoke:retrieve-audit
+npm run smoke:admin
 npm run smoke:workspace
 npm run smoke:workspace-page
 npm run smoke:edge
@@ -62,6 +65,13 @@ Health endpoint:
 ```text
 GET /kb/v1/health
 Headers: X-Tenant-Id, X-Request-Id
+```
+
+Admin endpoints require:
+
+```text
+Headers: X-Tenant-Id, X-Request-Id, X-Actor-Type: admin
+Optional: X-Actor-Id
 ```
 
 Workspace page preview (local static page):
@@ -120,3 +130,10 @@ Audit:
 - `GET /kb/v1/audit/logs/:auditId`
 - `GET /kb/v1/audit/stats`
 - `POST /kb/v1/audit/export`
+
+Admin:
+- `GET /kb/v1/admin/source-whitelist`
+  - query: `enabled`, `source_type`, `search`, `page`, `page_size`
+- `POST /kb/v1/admin/source-whitelist`
+- `PATCH /kb/v1/admin/source-whitelist/:whitelistId`
+- `GET /kb/v1/admin/policy-overview`

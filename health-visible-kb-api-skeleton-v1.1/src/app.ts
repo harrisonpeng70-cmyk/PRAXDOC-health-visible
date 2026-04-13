@@ -3,6 +3,7 @@ import path from "path";
 import { authMiddleware } from "./core/auth/auth-middleware";
 import { errorMiddleware, notFoundMiddleware, requestIdMiddleware } from "./core/http/middleware";
 import { tenantGuard } from "./core/tenant/tenant-guard";
+import { adminRouter } from "./modules/admin/admin.router";
 import { auditRouter } from "./modules/audit/audit.router";
 import { ingestRouter } from "./modules/ingest/ingest.router";
 import { retrieveRouter } from "./modules/retrieve/retrieve.router";
@@ -35,6 +36,7 @@ export function buildApp() {
   app.use("/kb/v1", retrieveRouter);
   app.use("/kb/v1", auditRouter);
   app.use("/kb/v1", workspaceRouter);
+  app.use("/kb/v1", adminRouter);
 
   app.use(notFoundMiddleware);
   app.use(errorMiddleware);
