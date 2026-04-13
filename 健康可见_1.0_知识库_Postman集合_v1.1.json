@@ -1,0 +1,357 @@
+{
+  "info": {
+    "_postman_id": "6a232e8e-58d2-4f47-8555-f6ed23f06535",
+    "name": "健康可见_1.0_知识库_API_v1.1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "云端公共知识库 v1.1：入库/检索/审计调试集合"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.collectionVariables.set('requestId', pm.variables.replaceIn('{{$guid}}'));"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Ingest",
+      "item": [
+        {
+          "name": "Create Source",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source_name\": \"WHO Guideline 2025\",\n  \"source_domain\": \"who.int\",\n  \"source_type\": \"guideline\",\n  \"publication_org\": \"WHO\",\n  \"publication_date\": \"2025-02-01\",\n  \"source_version\": \"v2025.02\",\n  \"source_url\": \"https://www.who.int\",\n  \"checksum\": \"seed-who-2025\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sources",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "sources" ]
+            }
+          }
+        },
+        {
+          "name": "Create Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source_id\": \"{{sourceId}}\",\n  \"title\": \"Type 2 Diabetes Guideline\",\n  \"language\": \"en\",\n  \"raw_storage_uri\": \"s3://health-visible-dev/kb/who-dm-2025.pdf\",\n  \"parser_version\": \"parser-1.4.2\",\n  \"chunk_strategy\": \"section_paragraph\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/documents",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "documents" ]
+            }
+          }
+        },
+        {
+          "name": "Create Entry (with Version)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kb_id\": \"KB-L1-DM-1001\",\n  \"layer\": \"L1\",\n  \"claim_type\": \"judgment\",\n  \"topic\": \"type2_diabetes_screening\",\n  \"tags\": [\"endocrine\", \"screening\"],\n  \"version\": {\n    \"statement\": \"成人空腹血糖异常且伴危险因素时，建议进入分层筛查流程。\",\n    \"applicability\": \"18岁以上，存在代谢风险人群。\",\n    \"contraindication\": \"妊娠期人群需走专门流程。\",\n    \"evidence_level\": \"A\",\n    \"confidence_score\": 0.95,\n    \"source_name\": \"WHO Guideline 2025\",\n    \"source_url\": \"https://www.who.int\",\n    \"source_version\": \"v2025.02\",\n    \"publication_date\": \"2025-02-01\",\n    \"citation_span\": \"Sec 3.2 para 2\",\n    \"checksum\": \"demo-create-entry\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entries",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "entries" ]
+            }
+          }
+        },
+        {
+          "name": "Create New Entry Version",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"statement\": \"微量营养素补充方案应个体化，并在冲突证据下保守处理。\",\n  \"applicability\": \"需要二次审核的探索性条目。\",\n  \"contraindication\": \"肝肾功能异常与妊娠人群禁用未经确认方案。\",\n  \"evidence_level\": \"C\",\n  \"confidence_score\": 0.60,\n  \"source_name\": \"Lifestyle Medicine Evidence Pack\",\n  \"source_url\": \"https://www.cochranelibrary.com\",\n  \"source_version\": \"v2024.06\",\n  \"publication_date\": \"2024-06-10\",\n  \"citation_span\": \"Page 15\",\n  \"checksum\": \"demo-version-2\",\n  \"supersedes_version_id\": \"{{approvedVersionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entries/{{entryId}}/versions",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "entries", "{{entryId}}", "versions" ]
+            }
+          }
+        },
+        {
+          "name": "Approve Version",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"doctor_lee\",\n  \"review_notes\": \"source verified\",\n  \"valid_from\": \"2026-04-12T00:00:00Z\",\n  \"valid_to\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{versionId}}/approve",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "reviews", "{{versionId}}", "approve" ]
+            }
+          }
+        },
+        {
+          "name": "Reject Version",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reviewer\": \"doctor_wang\",\n  \"review_notes\": \"conflict unresolved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/reviews/{{versionId}}/reject",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "reviews", "{{versionId}}", "reject" ]
+            }
+          }
+        },
+        {
+          "name": "Publish Snapshot",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"snapshot_name\": \"release-2026-04-week2\",\n  \"based_on_time\": \"2026-04-12T12:00:00Z\",\n  \"notes\": \"weekly stable release\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/snapshots/publish",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "snapshots", "publish" ]
+            }
+          }
+        },
+        {
+          "name": "Get Job",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/{{jobId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "jobs", "{{jobId}}" ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Retrieve",
+      "item": [
+        {
+          "name": "Search Hybrid",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"client_id\": \"client_123\",\n  \"query_text\": \"空腹血糖升高并伴体重下降如何分层处理\",\n  \"filters\": {\n    \"layers\": [\"L1\", \"L2\", \"L3\"],\n    \"claim_types\": [\"judgment\", \"procedure\"],\n    \"topics\": [\"type2_diabetes_screening\", \"inflammation_insulin_resistance\"],\n    \"evidence_levels\": [\"A\", \"B\", \"C\"]\n  },\n  \"weights\": {\n    \"r_struct\": 0.40,\n    \"r_keyword\": 0.25,\n    \"r_vector\": 0.25,\n    \"r_quality\": 0.10,\n    \"w_layer\": {\"L1\": 1.00, \"L2\": 0.80, \"L3\": 0.60},\n    \"w_evidence\": {\"A\": 1.00, \"B\": 0.85, \"C\": 0.70},\n    \"conflict_penalty\": 0.5\n  },\n  \"top_k\": 10,\n  \"need_explain\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/retrieve/search",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "retrieve", "search" ]
+            }
+          }
+        },
+        {
+          "name": "Get Entry Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/entries/{{entryId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "entries", "{{entryId}}" ]
+            }
+          }
+        },
+        {
+          "name": "Get Entry Versions",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/entries/{{entryId}}/versions",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "entries", "{{entryId}}", "versions" ]
+            }
+          }
+        },
+        {
+          "name": "Get Open Conflicts",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/conflicts?resolution_status=open&severity_gte=3",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "conflicts" ],
+              "query": [
+                { "key": "resolution_status", "value": "open" },
+                { "key": "severity_gte", "value": "3" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "item": [
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs?page=1&page_size=20",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "audit", "logs" ],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Log Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit/logs/{{auditId}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "audit", "logs", "{{auditId}}" ]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/audit/stats?from={{from}}&to={{to}}",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "audit", "stats" ],
+              "query": [
+                { "key": "from", "value": "{{from}}" },
+                { "key": "to", "value": "{{to}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Audit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Tenant-Id", "value": "{{tenantId}}" },
+              { "key": "X-Request-Id", "value": "{{requestId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"{{from}}\",\n  \"to\": \"{{to}}\",\n  \"format\": \"csv\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/audit/export",
+              "host": [ "{{baseUrl}}" ],
+              "path": [ "audit", "export" ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/kb/v1" },
+    { "key": "token", "value": "replace-with-jwt" },
+    { "key": "tenantId", "value": "00000000-0000-0000-0000-000000000001" },
+    { "key": "requestId", "value": "{{$guid}}" },
+    { "key": "sourceId", "value": "00000000-0000-0000-0001-000000000001" },
+    { "key": "entryId", "value": "00000000-0000-0000-0100-000000000005" },
+    { "key": "approvedVersionId", "value": "00000000-0000-0000-0200-000000000005" },
+    { "key": "versionId", "value": "00000000-0000-0000-0200-000000000006" },
+    { "key": "jobId", "value": "00000000-0000-0000-0400-000000000001" },
+    { "key": "auditId", "value": "00000000-0000-0000-0700-000000000001" },
+    { "key": "from", "value": "2026-04-01T00:00:00Z" },
+    { "key": "to", "value": "2026-04-30T23:59:59Z" }
+  ]
+}

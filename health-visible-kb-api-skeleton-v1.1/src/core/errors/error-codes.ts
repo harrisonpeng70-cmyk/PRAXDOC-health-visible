@@ -1,0 +1,14 @@
+export const ErrorCodes = {
+  PARAM_INVALID: "KB-4001",
+  TENANT_MISMATCH: "KB-4002",
+  SOURCE_NOT_WHITELISTED: "KB-4003",
+  REVIEW_STATUS_INVALID: "KB-4004",
+  NOT_FOUND: "KB-4041",
+  CONFLICT_UNRESOLVED: "KB-4091",
+  POLLUTION_RISK_HIGH: "KB-4221",
+  RETRIEVE_ENGINE_ERROR: "KB-5001",
+  VECTOR_ENGINE_ERROR: "KB-5002",
+  INTERNAL_ERROR: "KB-5000"
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

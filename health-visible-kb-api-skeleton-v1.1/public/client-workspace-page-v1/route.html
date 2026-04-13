@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workspace Route View v1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f4f6ef;
+        --panel: #fcfdf9;
+        --ink: #122228;
+        --muted: #5b6f74;
+        --brand: #0d8f8a;
+        --brand-2: #f2a64c;
+        --ok: #297a53;
+        --warn: #b2721c;
+        --err: #c2412d;
+        --line: #d6dfda;
+        --shadow: 0 12px 28px rgba(17, 38, 45, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Manrope", "Space Grotesk", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(circle at 12% -10%, #d5efe4 0%, transparent 35%),
+          radial-gradient(circle at 88% 2%, #ffe6bf 0%, transparent 32%),
+          linear-gradient(180deg, #f7faf4 0%, #f2f4ee 100%);
+        min-height: 100vh;
+      }
+
+      .shell {
+        max-width: 1120px;
+        margin: 26px auto 36px;
+        padding: 0 16px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .top {
+        padding: 18px 20px 22px;
+      }
+
+      .top-main {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .title {
+        margin: 0;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        font-size: 25px;
+      }
+
+      .subtitle {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .pill-ok {
+        background: rgba(41, 122, 83, 0.12);
+        color: var(--ok);
+      }
+
+      .pill-warn {
+        background: rgba(178, 114, 28, 0.12);
+        color: var(--warn);
+      }
+
+      .pill-err {
+        background: rgba(194, 65, 45, 0.12);
+        color: var(--err);
+      }
+
+      .control-row {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .control-row label {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 5px;
+        display: inline-block;
+      }
+
+      .control-row input,
+      .control-row select,
+      .control-row button,
+      .control-row a {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        height: 38px;
+        padding: 0 10px;
+        font: inherit;
+      }
+
+      .control-row button,
+      .control-row a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--brand), #14a4a0);
+        color: #fff;
+        border: none;
+        font-weight: 700;
+      }
+
+      .secondary-btn {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .hint-banner {
+        margin-top: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(178, 114, 28, 0.26);
+        background: #fff7e8;
+        color: #7f5515;
+        font-size: 13px;
+        padding: 10px 12px;
+        display: none;
+      }
+
+      .error-banner {
+        margin-top: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(194, 65, 45, 0.26);
+        background: #fff2ef;
+        color: #9d2d20;
+        font-size: 13px;
+        padding: 10px 12px;
+        display: none;
+      }
+
+      .grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .section {
+        padding: 16px;
+      }
+
+      .section h2 {
+        margin: 0 0 11px;
+        font-size: 16px;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        letter-spacing: 0.01em;
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .meta-item {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .meta-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .meta-value {
+        margin-top: 6px;
+        font-size: 14px;
+        font-weight: 700;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+
+      .payload-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+
+      .payload-list li {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 10px;
+        background: #fff;
+        font-size: 13px;
+      }
+
+      .payload-key {
+        color: var(--muted);
+        display: block;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .raw {
+        background: #122228;
+        color: #ddf2ec;
+        border-radius: 10px;
+        border: 1px solid #29434a;
+        padding: 12px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 320px;
+        overflow: auto;
+      }
+
+      .empty {
+        color: var(--muted);
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 13px;
+      }
+
+      @media (max-width: 980px) {
+        .control-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <section class="top panel">
+        <div class="top-main">
+          <div>
+            <h1 class="title">Workspace Route View v1</h1>
+            <p class="subtitle" id="top-subtitle">Route-level gateway for cards/draft/tasks/feedback</p>
+          </div>
+          <span id="result-pill" class="pill pill-ok">success</span>
+        </div>
+
+        <div class="control-row">
+          <div>
+            <label for="client-id">Client ID</label>
+            <input id="client-id" value="C_AUTO_001" />
+          </div>
+          <div>
+            <label for="route">Route</label>
+            <select id="route">
+              <option value="cards">cards</option>
+              <option value="draft">draft</option>
+              <option value="tasks">tasks</option>
+              <option value="feedback">feedback</option>
+            </select>
+          </div>
+          <div>
+            <label for="scenario">Scenario</label>
+            <select id="scenario">
+              <option value="auto">auto (db)</option>
+              <option value="full">full (mock)</option>
+              <option value="files_only">files_only (mock)</option>
+              <option value="partial">partial (mock)</option>
+              <option value="empty">empty (mock)</option>
+              <option value="error">error (mock)</option>
+            </select>
+          </div>
+          <div>
+            <label for="tenant-id">Tenant ID</label>
+            <input id="tenant-id" value="00000000-0000-0000-0000-000000000001" />
+          </div>
+          <div>
+            <label for="api-base">API Base</label>
+            <input id="api-base" />
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div>
+            <label>&nbsp;</label>
+            <button id="refresh-btn" class="primary-btn" type="button">Refresh Route</button>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <a id="back-btn" class="secondary-btn" href="#">Back Workspace</a>
+          </div>
+        </div>
+
+        <div class="hint-banner" id="hint-banner"></div>
+        <div class="error-banner" id="error-banner"></div>
+      </section>
+
+      <section class="grid">
+        <article class="section panel">
+          <h2>Route Summary</h2>
+          <div class="meta-grid" id="summary-grid"></div>
+        </article>
+
+        <article class="section panel">
+          <h2>Route Payload</h2>
+          <ul class="payload-list" id="payload-list"></ul>
+        </article>
+
+        <article class="section panel" style="grid-column: 1 / -1">
+          <h2>Raw Response</h2>
+          <div id="raw-response" class="raw"></div>
+        </article>
+      </section>
+    </div>
+
+    <script>
+      const allowedRoutes = ["cards", "draft", "tasks", "feedback"];
+      const params = new URLSearchParams(window.location.search);
+
+      const nodes = {
+        clientId: document.getElementById("client-id"),
+        route: document.getElementById("route"),
+        scenario: document.getElementById("scenario"),
+        tenantId: document.getElementById("tenant-id"),
+        apiBase: document.getElementById("api-base"),
+        refreshBtn: document.getElementById("refresh-btn"),
+        backBtn: document.getElementById("back-btn"),
+        topSubtitle: document.getElementById("top-subtitle"),
+        resultPill: document.getElementById("result-pill"),
+        hintBanner: document.getElementById("hint-banner"),
+        errorBanner: document.getElementById("error-banner"),
+        summaryGrid: document.getElementById("summary-grid"),
+        payloadList: document.getElementById("payload-list"),
+        rawResponse: document.getElementById("raw-response")
+      };
+
+      function initFromQuery() {
+        const route = params.get("route");
+        nodes.clientId.value = params.get("client_id") || "C_AUTO_001";
+        nodes.scenario.value = params.get("scenario") || "auto";
+        nodes.tenantId.value = params.get("tenant_id") || "00000000-0000-0000-0000-000000000001";
+        nodes.apiBase.value = params.get("api_base") || window.location.origin + "/kb/v1";
+        nodes.route.value = allowedRoutes.includes(route) ? route : "cards";
+      }
+
+      function card(label, value) {
+        const safeValue = value === null || value === undefined || value === "" ? "-" : value;
+        return (
+          '<div class="meta-item">' +
+          '<div class="meta-label">' +
+          label +
+          "</div>" +
+          '<div class="meta-value">' +
+          safeValue +
+          "</div>" +
+          "</div>"
+        );
+      }
+
+      function setBanner(type, text) {
+        if (type === "hint") {
+          nodes.hintBanner.style.display = text ? "block" : "none";
+          nodes.hintBanner.textContent = text || "";
+          return;
+        }
+        nodes.errorBanner.style.display = text ? "block" : "none";
+        nodes.errorBanner.textContent = text || "";
+      }
+
+      function setResultPill(status) {
+        nodes.resultPill.className = "pill";
+        if (status === "success") {
+          nodes.resultPill.classList.add("pill-ok");
+        } else if (status === "partial") {
+          nodes.resultPill.classList.add("pill-warn");
+        } else {
+          nodes.resultPill.classList.add("pill-err");
+        }
+        nodes.resultPill.textContent = status;
+      }
+
+      function buildWorkspaceUrl() {
+        const q = new URLSearchParams({
+          client_id: nodes.clientId.value.trim() || "C_AUTO_001",
+          scenario: nodes.scenario.value || "auto",
+          tenant_id: nodes.tenantId.value.trim() || "00000000-0000-0000-0000-000000000001",
+          api_base: nodes.apiBase.value.trim() || window.location.origin + "/kb/v1"
+        });
+        return "/client-workspace-page-v1/index.html?" + q.toString();
+      }
+
+      function syncUrl() {
+        const q = new URLSearchParams({
+          client_id: nodes.clientId.value.trim() || "C_AUTO_001",
+          route: nodes.route.value,
+          scenario: nodes.scenario.value || "auto",
+          tenant_id: nodes.tenantId.value.trim() || "00000000-0000-0000-0000-000000000001",
+          api_base: nodes.apiBase.value.trim() || window.location.origin + "/kb/v1"
+        });
+        window.history.replaceState({}, "", "?" + q.toString());
+        nodes.backBtn.setAttribute("href", buildWorkspaceUrl());
+      }
+
+      function toPayloadItems(payload) {
+        if (!payload || typeof payload !== "object") {
+          return [];
+        }
+        return Object.entries(payload).map(([key, value]) => ({
+          key,
+          value:
+            value === null || value === undefined
+              ? "-"
+              : typeof value === "object"
+                ? JSON.stringify(value)
+                : String(value)
+        }));
+      }
+
+      async function loadRoute() {
+        syncUrl();
+        setBanner("hint", "");
+        setBanner("error", "");
+        setResultPill("success");
+        nodes.summaryGrid.innerHTML = card("Loading", "Fetching route summary...");
+        nodes.payloadList.innerHTML = "";
+        nodes.rawResponse.textContent = "";
+
+        const clientId = nodes.clientId.value.trim() || "C_AUTO_001";
+        const route = nodes.route.value;
+        const scenario = nodes.scenario.value || "auto";
+        const tenantId = nodes.tenantId.value.trim();
+        const apiBase = nodes.apiBase.value.trim() || window.location.origin + "/kb/v1";
+        const endpoint =
+          apiBase.replace(/\/$/, "") +
+          "/clients/" +
+          encodeURIComponent(clientId) +
+          "/" +
+          encodeURIComponent(route) +
+          "?scenario=" +
+          encodeURIComponent(scenario);
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: {
+              "x-tenant-id": tenantId,
+              "x-actor-id": "workspace_route_page",
+              "x-actor-type": "doctor",
+              "x-request-id": "workspace-route-page-" + Date.now()
+            }
+          });
+          const body = await response.json();
+          nodes.rawResponse.textContent = JSON.stringify(body, null, 2);
+
+          if (!response.ok || body.status === "failed") {
+            throw new Error(body.error_hint || "workspace_route_failed");
+          }
+
+          const data = body.data || {};
+          setResultPill(body.status || "success");
+          nodes.topSubtitle.textContent =
+            "Route " +
+            (data.route || route) +
+            " | route_ready=" +
+            String(data.route_ready) +
+            " | error_hint: " +
+            (body.error_hint || "-");
+
+          nodes.summaryGrid.innerHTML =
+            card("Client ID", data.client_id || clientId) +
+            card("Route", data.route || route) +
+            card("Route Ready", String(data.route_ready)) +
+            card("Route URL", data.route_url || "-") +
+            card("Route Title", data.route_title || "-") +
+            card("Route Summary", data.route_summary || "-");
+
+          const payloadItems = toPayloadItems(data.route_payload);
+          if (payloadItems.length === 0) {
+            nodes.payloadList.innerHTML = '<li class="empty">No route payload.</li>';
+          } else {
+            nodes.payloadList.innerHTML = payloadItems
+              .map((item) => {
+                return (
+                  "<li><span class='payload-key'>" +
+                  item.key +
+                  "</span>" +
+                  item.value +
+                  "</li>"
+                );
+              })
+              .join("");
+          }
+
+          if (body.status === "partial" || !data.route_ready) {
+            setBanner("hint", "Route is reachable but not fully ready yet. Continue from workspace and fill missing prerequisites.");
+          }
+        } catch (err) {
+          setResultPill("failed");
+          nodes.topSubtitle.textContent = "Route load failed";
+          setBanner("error", "Route load failed: " + (err && err.message ? err.message : "unknown_error"));
+          nodes.summaryGrid.innerHTML = card("Error", "Failed to load route summary.");
+          nodes.payloadList.innerHTML = '<li class="empty">Data unavailable.</li>';
+          if (!nodes.rawResponse.textContent) {
+            nodes.rawResponse.textContent = "{}";
+          }
+        }
+      }
+
+      nodes.refreshBtn.addEventListener("click", loadRoute);
+      nodes.backBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.location.href = buildWorkspaceUrl();
+      });
+
+      initFromQuery();
+      loadRoute();
+    </script>
+  </body>
+</html>

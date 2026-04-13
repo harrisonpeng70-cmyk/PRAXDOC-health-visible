@@ -1,0 +1,35 @@
+{
+  "name": "health-visible-kb-api-skeleton-v1.1",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Health Visible KB API skeleton (ingest/retrieve/audit)",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "check": "tsc --noEmit",
+    "smoke:sources": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-sources.ps1 -Port 18081",
+    "smoke:retrieve-audit": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-retrieve-audit.ps1 -Port 18081",
+    "smoke:workspace": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-workspace.ps1 -Port 18081",
+    "smoke:workspace-page": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-workspace-page.ps1 -Port 18081",
+    "smoke:edge": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-edge.ps1 -Port 18081",
+    "smoke:all": "npm run smoke:sources && npm run smoke:retrieve-audit && npm run smoke:workspace && npm run smoke:workspace-page && npm run smoke:edge",
+    "preflight": "powershell -ExecutionPolicy Bypass -File ./scripts/preflight.ps1",
+    "preflight:report": "powershell -ExecutionPolicy Bypass -File ./scripts/preflight.ps1 -ReportDir reports",
+    "reports:prune": "powershell -ExecutionPolicy Bypass -File ./scripts/prune-reports.ps1 -ReportDir reports -KeepReports 20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.7.5",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

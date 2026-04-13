@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tasks Route Page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/route-page.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <section class="top panel">
+        <div class="top-main">
+          <div>
+            <h1 class="title" id="page-title">Tasks Route Page</h1>
+            <p class="subtitle" id="page-subtitle"></p>
+            <p class="subtitle" id="top-subtitle">Route-level tasks view</p>
+          </div>
+          <span id="result-pill" class="pill pill-ok">success</span>
+        </div>
+
+        <div class="control-row">
+          <div>
+            <label for="client-id">Client ID</label>
+            <input id="client-id" value="C_AUTO_001" />
+          </div>
+          <div>
+            <label>Route</label>
+            <input id="route-label" value="tasks" readonly />
+          </div>
+          <div>
+            <label for="scenario">Scenario</label>
+            <select id="scenario">
+              <option value="auto">auto (db)</option>
+              <option value="full">full (mock)</option>
+              <option value="files_only">files_only (mock)</option>
+              <option value="partial">partial (mock)</option>
+              <option value="empty">empty (mock)</option>
+              <option value="error">error (mock)</option>
+            </select>
+          </div>
+          <div>
+            <label for="tenant-id">Tenant ID</label>
+            <input id="tenant-id" value="00000000-0000-0000-0000-000000000001" />
+          </div>
+          <div>
+            <label for="api-base">API Base</label>
+            <input id="api-base" />
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div>
+            <label>&nbsp;</label>
+            <button id="refresh-btn" class="primary-btn" type="button">Refresh Route</button>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="action-btn" class="secondary-btn" type="button">Create Task Stub</button>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <a id="back-btn" class="secondary-btn" href="#">Back Workspace</a>
+          </div>
+        </div>
+
+        <div class="hint-banner" id="hint-banner"></div>
+        <div class="error-banner" id="error-banner"></div>
+      </section>
+
+      <section class="grid">
+        <article class="section panel">
+          <h2>Route Summary</h2>
+          <div class="meta-grid" id="summary-grid"></div>
+        </article>
+
+        <article class="section panel">
+          <h2>Route Payload</h2>
+          <ul class="payload-list" id="payload-list"></ul>
+        </article>
+
+        <article class="section panel" style="grid-column: 1 / -1">
+          <h2>Raw Response</h2>
+          <div id="raw-response" class="raw"></div>
+        </article>
+      </section>
+    </div>
+
+    <script src="./assets/route-page.js"></script>
+    <script>
+      window.initWorkspaceRoutePage({
+        route: "tasks",
+        title: "Tasks Route Page",
+        subtitle: "Inspect task readiness and log first task bootstrap action when needed.",
+        primaryActionLabel: "Create Task Stub",
+        primaryActionType: "create_task_stub"
+      });
+    </script>
+  </body>
+</html>

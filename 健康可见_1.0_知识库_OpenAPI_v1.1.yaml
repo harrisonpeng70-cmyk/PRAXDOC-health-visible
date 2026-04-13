@@ -1,0 +1,712 @@
+openapi: 3.0.3
+info:
+  title: 健康可见 1.0 云端公共知识库 API
+  version: 1.1.0
+  description: 入库、检索、审计接口契约
+servers:
+  - url: /kb/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: ingest
+  - name: retrieve
+  - name: audit
+paths:
+  /sources:
+    post:
+      tags: [ingest]
+      summary: 创建来源
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSourceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceResponse'
+
+  /documents:
+    post:
+      tags: [ingest]
+      summary: 上传文档元信息并触发切分
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+
+  /entries:
+    post:
+      tags: [ingest]
+      summary: 创建知识条目（含首版）
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEntryRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+
+  /entries/{entryId}:
+    get:
+      tags: [retrieve]
+      summary: 获取条目详情
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/EntryId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryResponse'
+
+  /entries/{entryId}/versions:
+    post:
+      tags: [ingest]
+      summary: 新增条目版本
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/EntryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVersionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+    get:
+      tags: [retrieve]
+      summary: 获取条目版本历史
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/EntryId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryVersionsResponse'
+
+  /reviews/{versionId}/approve:
+    post:
+      tags: [ingest]
+      summary: 审核通过
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/VersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  /reviews/{versionId}/reject:
+    post:
+      tags: [ingest]
+      summary: 审核拒绝
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/VersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  /snapshots/publish:
+    post:
+      tags: [ingest]
+      summary: 发布快照
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishSnapshotRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SnapshotResponse'
+
+  /jobs/{jobId}:
+    get:
+      tags: [ingest]
+      summary: 查询作业状态
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /retrieve/search:
+    post:
+      tags: [retrieve]
+      summary: 混合检索
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetrieveSearchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrieveSearchResponse'
+
+  /conflicts:
+    get:
+      tags: [retrieve]
+      summary: 冲突列表
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - in: query
+          name: resolution_status
+          schema:
+            type: string
+            enum: [open, resolved, ignored]
+        - in: query
+          name: severity_gte
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictsResponse'
+
+  /audit/logs:
+    get:
+      tags: [audit]
+      summary: 审计日志查询
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: actor_type
+          schema: { type: string }
+        - in: query
+          name: action_type
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogsResponse'
+
+  /audit/logs/{auditId}:
+    get:
+      tags: [audit]
+      summary: 审计日志详情
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/AuditId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogDetailResponse'
+
+  /audit/stats:
+    get:
+      tags: [audit]
+      summary: 审计统计
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+        - in: query
+          name: from
+          required: true
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditStatsResponse'
+
+  /audit/export:
+    post:
+      tags: [audit]
+      summary: 审计导出
+      parameters:
+        - $ref: '#/components/parameters/XTenantId'
+        - $ref: '#/components/parameters/XRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditExportRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    XTenantId:
+      in: header
+      name: X-Tenant-Id
+      required: true
+      schema: { type: string, format: uuid }
+    XRequestId:
+      in: header
+      name: X-Request-Id
+      required: true
+      schema: { type: string, format: uuid }
+    EntryId:
+      in: path
+      name: entryId
+      required: true
+      schema: { type: string, format: uuid }
+    VersionId:
+      in: path
+      name: versionId
+      required: true
+      schema: { type: string, format: uuid }
+    JobId:
+      in: path
+      name: jobId
+      required: true
+      schema: { type: string, format: uuid }
+    AuditId:
+      in: path
+      name: auditId
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    ResultType:
+      type: string
+      enum: [success, partial, failed, manual_needed]
+
+    Envelope:
+      type: object
+      required: [status, message, data]
+      properties:
+        status:
+          $ref: '#/components/schemas/ResultType'
+        message:
+          type: string
+        data:
+          type: object
+        error_hint:
+          type: string
+          nullable: true
+
+    CreateSourceRequest:
+      type: object
+      required: [source_name, source_domain, source_type, source_url]
+      properties:
+        source_name: { type: string }
+        source_domain: { type: string }
+        source_type: { type: string }
+        publication_org: { type: string }
+        publication_date: { type: string, format: date }
+        source_version: { type: string }
+        source_url: { type: string, format: uri }
+        checksum: { type: string }
+
+    SourceResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                source_id: { type: string, format: uuid }
+                is_whitelisted: { type: boolean }
+                pollution_risk_score: { type: number, format: double }
+                ingest_date: { type: string, format: date-time }
+
+    CreateDocumentRequest:
+      type: object
+      required: [source_id, title, raw_storage_uri]
+      properties:
+        source_id: { type: string, format: uuid }
+        title: { type: string }
+        language: { type: string }
+        raw_storage_uri: { type: string }
+        parser_version: { type: string }
+        chunk_strategy: { type: string }
+
+    DocumentResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                document_id: { type: string, format: uuid }
+                job_id: { type: string, format: uuid }
+                job_status: { type: string }
+
+    VersionPayload:
+      type: object
+      required: [statement, evidence_level, confidence_score, source_name, source_url]
+      properties:
+        statement: { type: string }
+        applicability: { type: string }
+        contraindication: { type: string }
+        evidence_level: { type: string }
+        confidence_score: { type: number, minimum: 0, maximum: 1 }
+        source_name: { type: string }
+        source_url: { type: string, format: uri }
+        source_version: { type: string }
+        publication_date: { type: string, format: date }
+        citation_span: { type: string }
+        checksum: { type: string }
+        supersedes_version_id: { type: string, format: uuid }
+
+    CreateEntryRequest:
+      type: object
+      required: [kb_id, layer, claim_type, topic, version]
+      properties:
+        kb_id: { type: string }
+        layer: { type: string, enum: [L1, L2, L3] }
+        claim_type: { type: string, enum: [judgment, procedure] }
+        topic: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        version:
+          $ref: '#/components/schemas/VersionPayload'
+
+    CreateVersionRequest:
+      allOf:
+        - $ref: '#/components/schemas/VersionPayload'
+
+    EntryResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                entry_id: { type: string, format: uuid }
+                kb_id: { type: string }
+                layer: { type: string, enum: [L1, L2, L3] }
+                claim_type: { type: string, enum: [judgment, procedure] }
+                topic: { type: string }
+                current_version_no: { type: integer }
+
+    VersionResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                entry_id: { type: string, format: uuid }
+                version_id: { type: string, format: uuid }
+                version_no: { type: integer }
+                review_status: { type: string, enum: [draft, reviewing, approved, rejected, deprecated] }
+
+    EntryVersionsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      version_id: { type: string, format: uuid }
+                      version_no: { type: integer }
+                      review_status: { type: string }
+                      publication_date: { type: string, format: date }
+                      created_at: { type: string, format: date-time }
+
+    ApproveRequest:
+      type: object
+      required: [reviewer]
+      properties:
+        reviewer: { type: string }
+        review_notes: { type: string }
+        valid_from: { type: string, format: date-time }
+        valid_to: { type: string, format: date-time, nullable: true }
+
+    RejectRequest:
+      type: object
+      required: [reviewer, review_notes]
+      properties:
+        reviewer: { type: string }
+        review_notes: { type: string }
+
+    PublishSnapshotRequest:
+      type: object
+      required: [snapshot_name, based_on_time]
+      properties:
+        snapshot_name: { type: string }
+        based_on_time: { type: string, format: date-time }
+        notes: { type: string }
+
+    SnapshotResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                snapshot_id: { type: string, format: uuid }
+                snapshot_name: { type: string }
+                released_at: { type: string, format: date-time }
+
+    JobResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                job_id: { type: string, format: uuid }
+                status: { type: string, enum: [queued, running, succeeded, failed, canceled] }
+                progress: { type: number }
+                error_message: { type: string, nullable: true }
+
+    RetrieveSearchRequest:
+      type: object
+      required: [query_text, top_k]
+      properties:
+        client_id: { type: string }
+        query_text: { type: string }
+        filters:
+          type: object
+          properties:
+            layers:
+              type: array
+              items: { type: string, enum: [L1, L2, L3] }
+            claim_types:
+              type: array
+              items: { type: string, enum: [judgment, procedure] }
+            topics:
+              type: array
+              items: { type: string }
+            evidence_levels:
+              type: array
+              items: { type: string }
+        weights:
+          type: object
+          additionalProperties: true
+        top_k: { type: integer, minimum: 1, maximum: 100 }
+        need_explain: { type: boolean, default: true }
+
+    RetrieveSearchResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                query_id: { type: string, format: uuid }
+                state: { type: string, enum: [ready, partial_ready, empty] }
+                hits:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      rank: { type: integer }
+                      entry_id: { type: string, format: uuid }
+                      version_id: { type: string, format: uuid }
+                      kb_id: { type: string }
+                      layer: { type: string }
+                      claim_type: { type: string }
+                      topic: { type: string }
+                      statement: { type: string }
+                      evidence_level: { type: string }
+                      confidence_score: { type: number }
+                      conflict_flag: { type: boolean }
+
+    ConflictsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      conflict_id: { type: string, format: uuid }
+                      topic: { type: string }
+                      conflict_type: { type: string }
+                      severity: { type: integer }
+                      resolution_status: { type: string }
+
+    AuditLogsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                page: { type: integer }
+                page_size: { type: integer }
+                total: { type: integer }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      audit_id: { type: string, format: uuid }
+                      audit_trail_id: { type: string }
+                      action_type: { type: string }
+                      result_type: { $ref: '#/components/schemas/ResultType' }
+                      created_at: { type: string, format: date-time }
+
+    AuditLogDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties: true
+
+    AuditStatsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                total_actions: { type: integer }
+                failed_actions: { type: integer }
+                pollution_blocked_count: { type: integer }
+                open_conflict_count: { type: integer }
+
+    AuditExportRequest:
+      type: object
+      required: [from, to, format]
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+        format: { type: string, enum: [csv, json] }

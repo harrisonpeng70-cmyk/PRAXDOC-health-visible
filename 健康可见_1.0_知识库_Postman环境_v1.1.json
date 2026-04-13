@@ -1,0 +1,69 @@
+{
+  "id": "0e5c3775-8769-4a02-8ccb-1f52af2fd0a5",
+  "name": "健康可见_1.0_知识库_本地环境_v1.1",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/kb/v1",
+      "enabled": true
+    },
+    {
+      "key": "token",
+      "value": "replace-with-jwt",
+      "enabled": true
+    },
+    {
+      "key": "tenantId",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "enabled": true
+    },
+    {
+      "key": "requestId",
+      "value": "{{$guid}}",
+      "enabled": true
+    },
+    {
+      "key": "sourceId",
+      "value": "00000000-0000-0000-0001-000000000001",
+      "enabled": true
+    },
+    {
+      "key": "entryId",
+      "value": "00000000-0000-0000-0100-000000000005",
+      "enabled": true
+    },
+    {
+      "key": "approvedVersionId",
+      "value": "00000000-0000-0000-0200-000000000005",
+      "enabled": true
+    },
+    {
+      "key": "versionId",
+      "value": "00000000-0000-0000-0200-000000000006",
+      "enabled": true
+    },
+    {
+      "key": "jobId",
+      "value": "00000000-0000-0000-0400-000000000001",
+      "enabled": true
+    },
+    {
+      "key": "auditId",
+      "value": "00000000-0000-0000-0700-000000000001",
+      "enabled": true
+    },
+    {
+      "key": "from",
+      "value": "2026-04-01T00:00:00Z",
+      "enabled": true
+    },
+    {
+      "key": "to",
+      "value": "2026-04-30T23:59:59Z",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-04-12T00:00:00.000Z",
+  "_postman_exported_using": "Codex GPT-5"
+}
