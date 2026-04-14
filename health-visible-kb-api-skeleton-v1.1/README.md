@@ -136,4 +136,7 @@ Admin:
   - query: `enabled`, `source_type`, `search`, `page`, `page_size`
 - `POST /kb/v1/admin/source-whitelist`
 - `PATCH /kb/v1/admin/source-whitelist/:whitelistId`
+- `GET /kb/v1/admin/policy-config`
+- `PATCH /kb/v1/admin/policy-config`
+  - supports tenant-level ingest/retrieve policy updates such as whitelist gate, trust-level range, L3 exploratory label, and partial-result hint text
 - `GET /kb/v1/admin/policy-overview`

@@ -9,6 +9,7 @@ import {
   insertVersion,
   rejectVersion
 } from "./ingest.repo";
+import { getRuntimePolicyConfig } from "../admin/admin.repo";
 
 export async function createSourceService(
   tenantId: string,
@@ -30,16 +31,20 @@ export async function createSourceService(
   ingest_date: string;
 }> {
   const normalizedDomain = payload.source_domain.trim().toLowerCase();
-  const isWhitelisted = await checkWhitelist(tenantId, normalizedDomain);
-  if (!isWhitelisted) {
+  const [policyConfig, isWhitelisted] = await Promise.all([
+    getRuntimePolicyConfig(tenantId),
+    checkWhitelist(tenantId, normalizedDomain)
+  ]);
+
+  if (policyConfig.ingest_policy.whitelist_gate_enabled && !isWhitelisted) {
     throw new Error("source_not_whitelisted");
   }
 
   return insertSource(tenantId, actorId, {
     ...payload,
     source_domain: normalizedDomain,
-    is_whitelisted: true,
-    pollution_risk_score: 0.03
+    is_whitelisted: isWhitelisted,
+    pollution_risk_score: isWhitelisted ? 0.03 : 0.18
   });
 }
 

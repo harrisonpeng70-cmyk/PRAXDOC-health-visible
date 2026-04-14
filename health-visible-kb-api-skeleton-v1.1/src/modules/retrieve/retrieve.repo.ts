@@ -5,6 +5,7 @@ type SearchInput = {
   actorType: string;
   actorId: string;
   clientId: string | null;
+  approvedOnly: boolean;
   queryText: string;
   filters: {
     layers?: Array<"L1" | "L2" | "L3">;
@@ -170,7 +171,10 @@ export async function runHybridSearch(input: SearchInput): Promise<{
         JOIN kb_entry_versions v ON v.entry_id = e.entry_id
         LEFT JOIN open_conflicts oc ON oc.topic = e.topic
         WHERE e.tenant_id = $1
-          AND v.review_status = 'approved'
+          AND (
+            ($19::boolean = true AND v.review_status = 'approved')
+            OR ($19::boolean = false AND v.review_status IN ('approved', 'reviewing', 'draft'))
+          )
           AND (v.valid_from IS NULL OR v.valid_from <= now())
           AND (v.valid_to IS NULL OR v.valid_to > now())
           AND (cardinality($3::text[]) = 0 OR e.topic = ANY($3::text[]))
@@ -201,7 +205,8 @@ export async function runHybridSearch(input: SearchInput): Promise<{
         input.weights.w_evidence.A ?? 1.0,
         input.weights.w_evidence.B ?? 0.85,
         input.weights.w_evidence.C ?? 0.7,
-        input.weights.conflict_penalty
+        input.weights.conflict_penalty,
+        input.approvedOnly
       ]
     );
 

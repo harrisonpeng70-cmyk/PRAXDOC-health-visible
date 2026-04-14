@@ -6,15 +6,19 @@ import { sendEnvelope } from "../../core/http/envelope";
 import { asyncHandler } from "../../core/http/middleware";
 import { writeAuditLog } from "../audit/audit.service";
 import {
+  AdminPolicyConfigResponseSchema,
   AdminWhitelistParamsSchema,
   AdminWhitelistQuerySchema,
   CreateWhitelistEntrySchema,
+  UpdatePolicyConfigSchema,
   UpdateWhitelistEntrySchema
 } from "./admin.schema";
 import {
   createSourceWhitelistEntryService,
+  getRuntimePolicyConfigService,
   getPolicyOverviewService,
   listSourceWhitelistService,
+  updateRuntimePolicyConfigService,
   updateSourceWhitelistEntryService
 } from "./admin.service";
 
@@ -83,6 +87,22 @@ function mapError(err: unknown): never {
       "whitelist_invalid_effective_range"
     );
   }
+  if (err instanceof Error && err.message === "whitelist_trust_level_out_of_range") {
+    throw new AppError(
+      400,
+      ErrorCodes.PARAM_INVALID,
+      "Whitelist trust level is outside the allowed policy range",
+      "whitelist_trust_level_out_of_range"
+    );
+  }
+  if (err instanceof Error && err.message === "policy_trust_level_range_invalid") {
+    throw new AppError(
+      400,
+      ErrorCodes.PARAM_INVALID,
+      "Policy trust level range is invalid",
+      "policy_trust_level_range_invalid"
+    );
+  }
 
   const errorCode = typeof (err as { code?: unknown })?.code === "string" ? (err as { code: string }).code : null;
   if (errorCode === "23505") {
@@ -148,6 +168,39 @@ export const updateSourceWhitelistRoute = asyncHandler(async (req: Request, res:
     }
 
     await auditSuccess(req, "admin_update", "source_whitelist", data.whitelist_id, requestPayload, data);
+    sendEnvelope(res, "success", "ok", data, null);
+  } catch (err) {
+    await auditFailure(req, "admin_update", requestPayload, err);
+    mapError(err);
+  }
+});
+
+export const getPolicyConfigRoute = asyncHandler(async (req: Request, res: Response) => {
+  try {
+    const data = AdminPolicyConfigResponseSchema.parse(await getRuntimePolicyConfigService(req.tenantId!));
+    await auditSuccess(req, "admin_query", "policy_config", req.tenantId!, {}, {
+      updated_at: data.updated_at,
+      trust_level_min: data.ingest_policy.trust_level_range.min
+    });
+    sendEnvelope(res, "success", "ok", data, null);
+  } catch (err) {
+    await auditFailure(req, "admin_query", {}, err);
+    mapError(err);
+  }
+});
+
+export const updatePolicyConfigRoute = asyncHandler(async (req: Request, res: Response) => {
+  let requestPayload: unknown = req.body;
+  try {
+    const body = UpdatePolicyConfigSchema.parse(req.body);
+    requestPayload = body;
+    const data = AdminPolicyConfigResponseSchema.parse(
+      await updateRuntimePolicyConfigService(req.tenantId!, req.actorId ?? "admin", body)
+    );
+    await auditSuccess(req, "admin_update", "policy_config", req.tenantId!, body, {
+      updated_at: data.updated_at,
+      updated_by: data.updated_by
+    });
     sendEnvelope(res, "success", "ok", data, null);
   } catch (err) {
     await auditFailure(req, "admin_update", requestPayload, err);

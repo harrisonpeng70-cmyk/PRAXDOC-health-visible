@@ -62,6 +62,29 @@ CREATE TABLE IF NOT EXISTS kb_source_whitelist (
   UNIQUE (tenant_id, source_domain)
 );
 
+CREATE TABLE IF NOT EXISTS kb_runtime_policies (
+  tenant_id            UUID PRIMARY KEY REFERENCES kb_tenants(tenant_id),
+  ingest_policy        JSONB NOT NULL,
+  retrieve_policy      JSONB NOT NULL,
+  updated_by           TEXT NOT NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_trigger
+    WHERE tgname = 'kb_runtime_policies_set_updated_at'
+  ) THEN
+    CREATE TRIGGER kb_runtime_policies_set_updated_at
+    BEFORE UPDATE ON kb_runtime_policies
+    FOR EACH ROW
+    EXECUTE FUNCTION kb_set_updated_at();
+  END IF;
+END$$;
+
 CREATE TABLE IF NOT EXISTS kb_sources (
   source_id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id            UUID NOT NULL REFERENCES kb_tenants(tenant_id),

@@ -1,4 +1,5 @@
 import { query } from "../../config/db";
+import { RuntimePolicyConfig, getDefaultRuntimePolicyConfig } from "../../shared/policy/runtime-policy";
 
 export type SourceWhitelistEntry = {
   whitelist_id: string;
@@ -26,6 +27,51 @@ type SourceWhitelistRow = {
   created_at: string;
 };
 
+type RuntimePolicyRow = {
+  ingest_policy: RuntimePolicyConfig["ingest_policy"];
+  retrieve_policy: RuntimePolicyConfig["retrieve_policy"];
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+let ensureRuntimePolicyTablePromise: Promise<void> | null = null;
+
+async function ensureRuntimePolicyTable(): Promise<void> {
+  if (!ensureRuntimePolicyTablePromise) {
+    ensureRuntimePolicyTablePromise = (async () => {
+      await query(`
+        CREATE TABLE IF NOT EXISTS kb_runtime_policies (
+          tenant_id UUID PRIMARY KEY REFERENCES kb_tenants(tenant_id),
+          ingest_policy JSONB NOT NULL,
+          retrieve_policy JSONB NOT NULL,
+          updated_by TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+      `);
+
+      await query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1
+            FROM pg_trigger
+            WHERE tgname = 'kb_runtime_policies_set_updated_at'
+          ) THEN
+            CREATE TRIGGER kb_runtime_policies_set_updated_at
+            BEFORE UPDATE ON kb_runtime_policies
+            FOR EACH ROW
+            EXECUTE FUNCTION kb_set_updated_at();
+          END IF;
+        END$$;
+      `);
+    })();
+  }
+
+  await ensureRuntimePolicyTablePromise;
+}
+
 function mapWhitelistRow(row: SourceWhitelistRow): SourceWhitelistEntry {
   return {
     whitelist_id: row.whitelist_id,
@@ -38,6 +84,20 @@ function mapWhitelistRow(row: SourceWhitelistRow): SourceWhitelistEntry {
     effective_to: row.effective_to,
     created_by: row.created_by,
     created_at: row.created_at
+  };
+}
+
+function mapRuntimePolicyRow(row: RuntimePolicyRow): RuntimePolicyConfig & {
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+} {
+  return {
+    ingest_policy: row.ingest_policy,
+    retrieve_policy: row.retrieve_policy,
+    updated_by: row.updated_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at
   };
 }
 
@@ -285,6 +345,97 @@ export async function updateSourceWhitelistEntry(
   }
 
   return mapWhitelistRow(result.rows[0]);
+}
+
+export async function getRuntimePolicyConfig(tenantId: string): Promise<
+  RuntimePolicyConfig & {
+    updated_by: string;
+    created_at: string;
+    updated_at: string;
+  }
+> {
+  await ensureRuntimePolicyTable();
+
+  const existingResult = await query<RuntimePolicyRow>(
+    `
+      SELECT
+        ingest_policy,
+        retrieve_policy,
+        updated_by,
+        created_at::text,
+        updated_at::text
+      FROM kb_runtime_policies
+      WHERE tenant_id = $1
+      LIMIT 1
+    `,
+    [tenantId]
+  );
+
+  if (existingResult.rowCount) {
+    return mapRuntimePolicyRow(existingResult.rows[0]);
+  }
+
+  const defaults = getDefaultRuntimePolicyConfig();
+  const insertedResult = await query<RuntimePolicyRow>(
+    `
+      INSERT INTO kb_runtime_policies (
+        tenant_id,
+        ingest_policy,
+        retrieve_policy,
+        updated_by
+      )
+      VALUES ($1, $2::jsonb, $3::jsonb, $4)
+      RETURNING
+        ingest_policy,
+        retrieve_policy,
+        updated_by,
+        created_at::text,
+        updated_at::text
+    `,
+    [tenantId, JSON.stringify(defaults.ingest_policy), JSON.stringify(defaults.retrieve_policy), "system"]
+  );
+
+  return mapRuntimePolicyRow(insertedResult.rows[0]);
+}
+
+export async function updateRuntimePolicyConfig(
+  tenantId: string,
+  actorId: string,
+  config: RuntimePolicyConfig
+): Promise<
+  RuntimePolicyConfig & {
+    updated_by: string;
+    created_at: string;
+    updated_at: string;
+  }
+> {
+  await ensureRuntimePolicyTable();
+
+  const result = await query<RuntimePolicyRow>(
+    `
+      INSERT INTO kb_runtime_policies (
+        tenant_id,
+        ingest_policy,
+        retrieve_policy,
+        updated_by
+      )
+      VALUES ($1, $2::jsonb, $3::jsonb, $4)
+      ON CONFLICT (tenant_id)
+      DO UPDATE SET
+        ingest_policy = EXCLUDED.ingest_policy,
+        retrieve_policy = EXCLUDED.retrieve_policy,
+        updated_by = EXCLUDED.updated_by
+      RETURNING
+        ingest_policy,
+        retrieve_policy,
+        updated_by,
+        created_at::text,
+        updated_at::text
+    `,
+    [tenantId, JSON.stringify(config.ingest_policy), JSON.stringify(config.retrieve_policy), actorId]
+  );
+
+  return mapRuntimePolicyRow(result.rows[0]);
 }
 
 export async function getWhitelistSummary(tenantId: string): Promise<{

@@ -105,12 +105,27 @@ try {
 
   $domain = "smoke-admin-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmssfff')).example"
   $domainQ = [Uri]::EscapeDataString($domain)
+  $lowTrustDomain = "smoke-admin-lowtrust-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmssfff')).example"
+  $blockedSourceDomain = "smoke-admin-blocked-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmssfff')).example"
   $createBody = @{
     source_name = "Smoke Admin Source"
     source_domain = $domain
     source_type = "guideline"
     trust_level = 4
     enabled = $true
+  } | ConvertTo-Json -Compress
+  $lowTrustBody = @{
+    source_name = "Smoke Admin Low Trust"
+    source_domain = $lowTrustDomain
+    source_type = "guideline"
+    trust_level = 1
+    enabled = $true
+  } | ConvertTo-Json -Compress
+  $blockedSourceBody = @{
+    source_name = "Smoke Admin Blocked Source"
+    source_domain = $blockedSourceDomain
+    source_type = "guideline"
+    source_url = "https://$blockedSourceDomain/doc"
   } | ConvertTo-Json -Compress
 
   $doctorDenied = Invoke-JsonRequest `
@@ -119,11 +134,53 @@ try {
     -Url "http://localhost:$Port/kb/v1/admin/policy-overview" `
     -Headers ($doctorHeaders + @{ "x-request-id" = "smoke-admin-doctor-denied" })
 
+  $policyConfigGet = Invoke-JsonRequest `
+    -Client $client `
+    -Method "GET" `
+    -Url "http://localhost:$Port/kb/v1/admin/policy-config" `
+    -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-policy-config-get" })
+
+  $restorePolicyBody = ""
+  if ($policyConfigGet.body -and $policyConfigGet.body.data) {
+    $restorePolicyBody = @{
+      ingest_policy = $policyConfigGet.body.data.ingest_policy
+      retrieve_policy = $policyConfigGet.body.data.retrieve_policy
+    } | ConvertTo-Json -Depth 8 -Compress
+  }
+
+  $policyPatchBody = @{
+    ingest_policy = @{
+      whitelist_gate_enabled = $false
+      trust_level_range = @{
+        min = 2
+        max = 5
+      }
+    }
+    retrieve_policy = @{
+      l3_requires_exploratory_label = $false
+      no_l1_hit_error_hint = "admin_partial_override"
+    }
+  } | ConvertTo-Json -Depth 8 -Compress
+
+  $policyConfigPatch = Invoke-JsonRequest `
+    -Client $client `
+    -Method "PATCH" `
+    -Url "http://localhost:$Port/kb/v1/admin/policy-config" `
+    -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-policy-config-patch" }) `
+    -JsonBody $policyPatchBody
+
   $policyOverview = Invoke-JsonRequest `
     -Client $client `
     -Method "GET" `
     -Url "http://localhost:$Port/kb/v1/admin/policy-overview" `
     -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-policy-overview" })
+
+  $lowTrustCreate = Invoke-JsonRequest `
+    -Client $client `
+    -Method "POST" `
+    -Url "http://localhost:$Port/kb/v1/admin/source-whitelist" `
+    -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-low-trust-create" }) `
+    -JsonBody $lowTrustBody
 
   $listBeforeCreate = Invoke-JsonRequest `
     -Client $client `
@@ -165,6 +222,32 @@ try {
     -Url "http://localhost:$Port/kb/v1/admin/source-whitelist?enabled=false&search=$domainQ&page=1&page_size=10" `
     -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-disabled-filter" })
 
+  $blockedSourceAllowed = Invoke-JsonRequest `
+    -Client $client `
+    -Method "POST" `
+    -Url "http://localhost:$Port/kb/v1/sources" `
+    -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-gate-disabled-source" }) `
+    -JsonBody $blockedSourceBody
+
+  $retrievePartialOverride = Invoke-JsonRequest `
+    -Client $client `
+    -Method "POST" `
+    -Url "http://localhost:$Port/kb/v1/retrieve/search" `
+    -Headers ($doctorHeaders + @{ "x-request-id" = "smoke-admin-retrieve-partial-override" }) `
+    -JsonBody '{"query_text":"micronutrient support","filters":{"layers":["L3"],"topics":["micronutrient_support_assessment"]},"top_k":5}'
+
+  $policyRestore = $null
+  if ($restorePolicyBody) {
+    $policyRestore = Invoke-JsonRequest `
+      -Client $client `
+      -Method "PATCH" `
+      -Url "http://localhost:$Port/kb/v1/admin/policy-config" `
+      -Headers ($adminHeaders + @{ "x-request-id" = "smoke-admin-policy-config-restore" }) `
+      -JsonBody $restorePolicyBody
+  } else {
+    $policyRestore = [pscustomobject]@{ status_code = 0; body_raw = ""; body = $null }
+  }
+
   $results = @(
     [pscustomobject]@{
       case = "doctor_access_denied"
@@ -175,13 +258,43 @@ try {
         $doctorDenied.body.error_hint -eq "actor_type_not_allowed"
     },
     [pscustomobject]@{
-      case = "policy_overview_admin"
+      case = "policy_config_get"
+      status = $policyConfigGet.status_code
+      detail = if ($policyConfigGet.body -and $policyConfigGet.body.data) { [string]$policyConfigGet.body.data.ingest_policy.whitelist_gate_enabled } else { "" }
+      passed =
+        $policyConfigGet.status_code -eq 200 -and
+        $policyConfigGet.body.status -eq "success" -and
+        $null -ne $policyConfigGet.body.data.retrieve_policy.default_weights
+    },
+    [pscustomobject]@{
+      case = "policy_config_patch"
+      status = $policyConfigPatch.status_code
+      detail = if ($policyConfigPatch.body -and $policyConfigPatch.body.data) { [string]$policyConfigPatch.body.data.retrieve_policy.no_l1_hit_error_hint } else { "" }
+      passed =
+        $policyConfigPatch.status_code -eq 200 -and
+        $policyConfigPatch.body.data.ingest_policy.whitelist_gate_enabled -eq $false -and
+        $policyConfigPatch.body.data.ingest_policy.trust_level_range.min -eq 2 -and
+        $policyConfigPatch.body.data.retrieve_policy.l3_requires_exploratory_label -eq $false -and
+        $policyConfigPatch.body.data.retrieve_policy.no_l1_hit_error_hint -eq "admin_partial_override"
+    },
+    [pscustomobject]@{
+      case = "policy_overview_reflects_policy"
       status = $policyOverview.status_code
-      detail = if ($policyOverview.body -and $policyOverview.body.data) { [string]$policyOverview.body.data.runtime_flags.admin_actor_required } else { "" }
+      detail = if ($policyOverview.body -and $policyOverview.body.data) { [string]$policyOverview.body.data.ingest_policy.whitelist_gate_enabled } else { "" }
       passed =
         $policyOverview.status_code -eq 200 -and
         $policyOverview.body.status -eq "success" -and
-        $policyOverview.body.data.runtime_flags.admin_actor_required -eq $true
+        $policyOverview.body.data.ingest_policy.whitelist_gate_enabled -eq $false -and
+        $policyOverview.body.data.retrieve_policy.l3_requires_exploratory_label -eq $false -and
+        $policyOverview.body.data.retrieve_policy.no_l1_hit_error_hint -eq "admin_partial_override"
+    },
+    [pscustomobject]@{
+      case = "trust_level_range_enforced"
+      status = $lowTrustCreate.status_code
+      detail = if ($lowTrustCreate.body) { [string]$lowTrustCreate.body.error_hint } else { "" }
+      passed =
+        $lowTrustCreate.status_code -eq 400 -and
+        $lowTrustCreate.body.error_hint -eq "whitelist_trust_level_out_of_range"
     },
     [pscustomobject]@{
       case = "whitelist_list"
@@ -225,6 +338,34 @@ try {
         $disabledFiltered.status_code -eq 200 -and
         $disabledFiltered.body.data.total -ge 1 -and
         (@($disabledFiltered.body.data.items | Where-Object { $_.source_domain -eq $domain }).Count -ge 1)
+    },
+    [pscustomobject]@{
+      case = "source_gate_disabled_allows_non_whitelist"
+      status = $blockedSourceAllowed.status_code
+      detail = if ($blockedSourceAllowed.body -and $blockedSourceAllowed.body.data) { [string]$blockedSourceAllowed.body.data.is_whitelisted } else { "" }
+      passed =
+        $blockedSourceAllowed.status_code -eq 200 -and
+        $blockedSourceAllowed.body.status -eq "success" -and
+        $blockedSourceAllowed.body.data.is_whitelisted -eq $false
+    },
+    [pscustomobject]@{
+      case = "retrieve_partial_hint_override"
+      status = $retrievePartialOverride.status_code
+      detail = if ($retrievePartialOverride.body) { [string]$retrievePartialOverride.body.error_hint } else { "" }
+      passed =
+        $retrievePartialOverride.status_code -eq 200 -and
+        $retrievePartialOverride.body.status -eq "partial" -and
+        $retrievePartialOverride.body.error_hint -eq "admin_partial_override" -and
+        $retrievePartialOverride.body.data.hits.Count -ge 1 -and
+        @($retrievePartialOverride.body.data.hits | Where-Object { $_.labels.Count -eq 0 }).Count -ge 1
+    },
+    [pscustomobject]@{
+      case = "policy_restore"
+      status = $policyRestore.status_code
+      detail = if ($policyRestore.body -and $policyRestore.body.data) { [string]$policyRestore.body.data.ingest_policy.whitelist_gate_enabled } else { "" }
+      passed =
+        $policyRestore.status_code -eq 200 -and
+        $policyRestore.body.status -eq "success"
     }
   )
 
