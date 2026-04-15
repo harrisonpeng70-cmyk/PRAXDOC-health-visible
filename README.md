@@ -1,32 +1,142 @@
+# Health Visible KB API Skeleton v1.1
 
-# 健康可见｜UI优化专用 uni-app 工程
+Minimal runnable Express + TypeScript backend for:
+- ingest APIs
+- retrieve APIs
+- audit APIs
+- workspace APIs
+- admin APIs
 
-这是把 `ab端移动端原型_v_0_UI优化专用.html` 转成 **uni-app（HBuilder X 可直接打开编辑）** 的版本。
+## 1) Setup
 
-## 目录说明
+1. Copy `.env.example` to `.env` and update DB settings.
+2. Install dependencies:
 
-- `pages/index/index.vue`：当前 UI 优化主页面
-- `common/mock-data.js`：场景流数据、按钮关系、示意数据
-- `pages.json`：页面注册与窗口配置
-- `manifest.json`：应用名称与基础配置
-- `App.vue / main.js`：uni-app 入口文件
+```bash
+npm install
+```
 
-## 使用方法
+3. Type check:
 
-1. 解压本项目 zip
-2. 用 **HBuilder X** 选择“打开目录”
-3. 打开项目根目录
-4. 运行到浏览器或运行到手机模拟器开始编辑
+```bash
+npm run check
+```
 
-## 当前工程定位
+4. Build:
 
-- 这是 **UI 优化工程**，不是正式业务工程
-- 当前保留了 **A/B 端页面切换器**
-- 已按当前实际计划接好了关键按钮跳转关系
-- 适合先在 HBuilder X / Figma 并行做视觉与交互收束
+```bash
+npm run build
+```
 
-## 下一步建议
+5. Run:
 
-- 把 `common/mock-data.js` 继续拆成 A / B 两份数据
-- 将 `pages/index/index.vue` 再拆成 `components/*` 组件
-- UI 稳定后，再迁移到真正的 demo 业务工程
+```bash
+npm run dev
+```
+
+6. Smoke tests:
+
+```bash
+npm run smoke:sources
+npm run smoke:retrieve-audit
+npm run smoke:admin
+npm run smoke:workspace
+npm run smoke:workspace-page
+npm run smoke:edge
+npm run smoke:all
+```
+
+Smoke scripts run on isolated port `18081` by default to avoid conflicts with local dev server on `18080`.
+
+7. Preflight:
+
+```bash
+npm run preflight
+npm run preflight:report
+npm run reports:prune
+```
+
+Preflight report output path:
+- `reports/preflight-report-YYYYMMDD-HHMMSS.md`
+- Preflight auto-prunes old reports and keeps latest 20 by default.
+
+Health endpoint:
+
+```text
+GET /kb/v1/health
+Headers: X-Tenant-Id, X-Request-Id
+```
+
+Admin endpoints require:
+
+```text
+Headers: X-Tenant-Id, X-Request-Id, X-Actor-Type: admin
+Optional: X-Actor-Id
+```
+
+Workspace page preview (local static page):
+
+```text
+http://localhost:18080/client-workspace-page-v1/index.html
+http://localhost:18080/client-workspace-page-v1/route.html
+http://localhost:18080/client-workspace-page-v1/cards.html
+http://localhost:18080/client-workspace-page-v1/draft.html
+http://localhost:18080/client-workspace-page-v1/tasks.html
+http://localhost:18080/client-workspace-page-v1/feedback.html
+```
+
+See:
+- `docs/client-workspace-page-v1.md`
+
+## 2) Database
+
+Run these scripts in order:
+1. `健康可见_1.0_知识库_数据库迁移_v1.1_无pgvector兼容.sql`
+2. `健康可见_1.0_知识库_最小种子数据_v1.1.sql`
+
+Optional after pgvector is installed:
+3. `健康可见_1.0_知识库_pgvector补齐迁移_v1.1.sql`
+
+## 3) API Coverage
+
+Ingest:
+- `POST /kb/v1/sources`
+- `POST /kb/v1/documents`
+- `POST /kb/v1/entries`
+- `POST /kb/v1/entries/:entryId/versions`
+- `POST /kb/v1/reviews/:versionId/approve`
+- `POST /kb/v1/reviews/:versionId/reject`
+- `POST /kb/v1/snapshots/publish`
+- `GET /kb/v1/jobs/:jobId`
+
+Retrieve:
+- `POST /kb/v1/retrieve/search`
+- `GET /kb/v1/entries/:entryId`
+- `GET /kb/v1/entries/:entryId/versions`
+- `GET /kb/v1/conflicts`
+
+Workspace:
+- `GET /kb/v1/clients/:clientId/workspace-summary`
+- `GET /kb/v1/clients/:clientId/atomic-profile` (supports `limit`, `atom_groups`, `confidence_tiers`, `quality_flags`)
+- `GET /kb/v1/clients/:clientId/cards`
+- `GET /kb/v1/clients/:clientId/draft`
+- `GET /kb/v1/clients/:clientId/tasks`
+- `GET /kb/v1/clients/:clientId/feedback`
+- `POST /kb/v1/clients/:clientId/workspace-actions`
+  - supports logging actions and creating minimal stubs (`create_draft_stub`, `create_task_stub`, `create_feedback_stub`)
+
+Audit:
+- `GET /kb/v1/audit/logs`
+- `GET /kb/v1/audit/logs/:auditId`
+- `GET /kb/v1/audit/stats`
+- `POST /kb/v1/audit/export`
+
+Admin:
+- `GET /kb/v1/admin/source-whitelist`
+  - query: `enabled`, `source_type`, `search`, `page`, `page_size`
+- `POST /kb/v1/admin/source-whitelist`
+- `PATCH /kb/v1/admin/source-whitelist/:whitelistId`
+- `GET /kb/v1/admin/policy-config`
+- `PATCH /kb/v1/admin/policy-config`
+  - supports tenant-level ingest/retrieve policy updates such as whitelist gate, trust-level range, L3 exploratory label, and partial-result hint text
+- `GET /kb/v1/admin/policy-overview`
