@@ -1,0 +1,16 @@
+
+{
+  "name": "健康可见 UI 优化版",
+  "appid": "__UNI__HKBJ_UI_OPT",
+  "description": "浩星愈能 AB 端 UI 优化专用 uni-app 工程",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app"
+  },
+  "h5": {
+    "title": "健康可见｜UI优化版"
+  }
+}
